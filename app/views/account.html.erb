@@ -1,8 +1,26 @@
 <% 
     user = AuthHelper.current_user(@req)
-    # Find orders for this user
-    orders = Database.collection(:orders).find(user_id: user.id.to_s).sort(created_at: -1).to_a
+    
+    # Pagination Setup
+    per_page = 3
+    current_page = (@req.params['page'] || 1).to_i
+    current_page = 1 if current_page < 1
+    
+    filter = { user_id: user.id.to_s }
+    total_orders = Database.collection(:orders).count_documents(filter)
+    total_pages = (total_orders.to_f / per_page).ceil
+    
+    skip = (current_page - 1) * per_page
+    orders = Database.collection(:orders).find(filter).sort(created_at: -1).limit(per_page).skip(skip).to_a
+    
     @title = "Akun Saya - Antivoid Shop"
+    
+    # Helper for query string
+    def page_url(req, p)
+        params = req.params.dup
+        params['page'] = p
+        "?" + params.map{|k,v| "#{k}=#{v}"}.join("&")
+    end
 %>
 
 <div class="max-w-7xl mx-auto px-6 py-12 animate__animated animate__fadeIn">
@@ -120,6 +138,33 @@
                         </div>
                     <% end %>
                 </div>
+
+                <!-- Pagination Controls -->
+                <% if total_pages > 1 %>
+                    <div class="mt-10 flex justify-center items-center gap-2">
+                        <% if current_page > 1 %>
+                            <a href="<%= page_url(@req, current_page - 1) %>" 
+                                class="glass border border-white/60 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-900 hover:text-white transition shadow-sm">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </a>
+                        <% end %>
+
+                        <% (1..total_pages).each do |p| %>
+                            <a href="<%= page_url(@req, p) %>" 
+                                class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition shadow-sm
+                                <%= p == current_page ? 'bg-indigo-600 text-white shadow-indigo-100' : 'glass border border-white/60 hover:bg-white' %>">
+                                <%= p %>
+                            </a>
+                        <% end %>
+
+                        <% if current_page < total_pages %>
+                            <a href="<%= page_url(@req, current_page + 1) %>" 
+                                class="glass border border-white/60 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-900 hover:text-white transition shadow-sm">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </a>
+                        <% end %>
+                    </div>
+                <% end %>
             <% end %>
         </div>
     </div>

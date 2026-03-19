@@ -39,7 +39,10 @@ module EmailHelper
   end
 
   def self.send_admin_order_notification(order, base_url = "https://antivoid-ecom.up.railway.app")
-    return unless ENV['BREVO_API_KEY'] && ENV['ADMIN_EMAIL']
+    unless ENV['BREVO_API_KEY'] && ENV['ADMIN_EMAIL']
+      puts "ADMIN NOTIFICATION SKIPPED: BREVO_API_KEY or ADMIN_EMAIL missing in ENV"
+      return
+    end
 
     uri = URI.parse(BREVO_API_URL)
     http = Net::HTTP.new(uri.host, uri.port)
@@ -65,6 +68,7 @@ module EmailHelper
     }.to_json
 
     response = http.request(request)
+    puts "ADMIN NOTIFICATION SENT: Status #{response.code} - Body: #{response.body[0..100]}..."
     
     unless response.code == '201'
       puts "Brevo Admin Email Error: #{response.body}"

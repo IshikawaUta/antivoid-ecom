@@ -114,9 +114,14 @@ module ShopController
   end
 
   def handle_xendit_webhook
-    return [403, {}, ['Invalid Token']] unless XenditHelper.verify_callback(@req.env['HTTP_X_CALLBACK_TOKEN'])
-
+    puts "DEBUG: Xendit Webhook Received - Headers: #{@req.env['HTTP_X_CALLBACK_TOKEN']}"
+    unless XenditHelper.verify_callback(@req.env['HTTP_X_CALLBACK_TOKEN'])
+      puts "DEBUG: Xendit Webhook Forbidden - Invalid Token"
+      return [403, {}, ['Invalid Token']]
+    end
+    
     data = JSON.parse(@req.body.read)
+    puts "DEBUG: Xendit Webhook Data: #{data['external_id']} - Status: #{data['status']}"
     external_id = data['external_id']
     status = data['status']
 
